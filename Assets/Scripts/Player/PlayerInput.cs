@@ -21,6 +21,9 @@ namespace GameDevTV.Player
 
         [SerializeField]
         private CameraConfig cameraConfig;
+
+        [SerializeField]
+        private LayerMask selectableUnitsLayers;
         private float zoomStartTime;
         private float rotationStartTime;
         private float maxRotationAmount;
@@ -68,7 +71,7 @@ namespace GameDevTV.Player
                         cameraRay,
                         out RaycastHit hit,
                         float.MaxValue,
-                        LayerMask.GetMask("Default")
+                        selectableUnitsLayers
                     ) && hit.collider.TryGetComponent(out ISelectable selectable)
                 )
                 {
