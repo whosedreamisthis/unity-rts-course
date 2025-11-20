@@ -24,6 +24,9 @@ namespace GameDevTV.Player
 
         [SerializeField]
         private LayerMask selectableUnitsLayers;
+
+        [SerializeField]
+        private LayerMask floorLayers;
         private float zoomStartTime;
         private float rotationStartTime;
         private float maxRotationAmount;
@@ -50,6 +53,21 @@ namespace GameDevTV.Player
             HandleZooming();
             HandleRotation();
             HandleLeftClick();
+            HandleRightClick();
+        }
+
+        private void HandleRightClick()
+        {
+            if (selectedUnit == null || selectedUnit is not IMovable movable)
+                return;
+            Ray cameraRay = camera.ScreenPointToRay(Mouse.current.position.ReadValue());
+            if (Mouse.current.rightButton.wasReleasedThisFrame)
+            {
+                if (Physics.Raycast(cameraRay, out RaycastHit hit, float.MaxValue, floorLayers))
+                {
+                    movable.MoveTo(hit.point);
+                }
+            }
         }
 
         private void HandleLeftClick()

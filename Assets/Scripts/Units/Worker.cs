@@ -5,10 +5,8 @@ using UnityEngine.Rendering.Universal;
 namespace GameDevTV.Units
 {
     [RequireComponent(typeof(NavMeshAgent))]
-    public class Worker : MonoBehaviour, ISelectable
+    public class Worker : MonoBehaviour, ISelectable, IMovable
     {
-        [SerializeField]
-        private Transform target;
         private NavMeshAgent agent;
 
         [SerializeField]
@@ -18,6 +16,11 @@ namespace GameDevTV.Units
         {
             if (decal != null)
                 decal.gameObject.SetActive(false);
+        }
+
+        public void MoveTo(Vector3 position)
+        {
+            agent.SetDestination(position);
         }
 
         public void Select()
@@ -30,15 +33,6 @@ namespace GameDevTV.Units
         {
             agent = GetComponent<NavMeshAgent>();
             // decal = GetComponentInChildren<DecalProjector>().gameObject;
-        }
-
-        // Update is called once per frame
-        private void Update()
-        {
-            if (target != null)
-            {
-                agent.SetDestination(target.position);
-            }
         }
     }
 }
