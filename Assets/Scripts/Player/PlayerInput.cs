@@ -1,5 +1,6 @@
 // using GameDevTV.Player;
 using System;
+using GameDevTV.Units;
 using Unity.Cinemachine;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -13,6 +14,9 @@ namespace GameDevTV.Player
 
         [SerializeField]
         private CinemachineCamera cinemachineCamera;
+
+        [SerializeField]
+        private new Camera camera;
         private CinemachineFollow cinemachineFollow;
 
         [SerializeField]
@@ -20,6 +24,7 @@ namespace GameDevTV.Player
         private float zoomStartTime;
         private float rotationStartTime;
         private float maxRotationAmount;
+        private ISelectable selectedUnit;
 
         private Vector3 startingFollowOffset;
 
@@ -41,6 +46,36 @@ namespace GameDevTV.Player
             HandlePanning();
             HandleZooming();
             HandleRotation();
+            HandleLeftClick();
+        }
+
+        private void HandleLeftClick()
+        {
+            if (camera == null)
+                return;
+
+            Ray cameraRay = camera.ScreenPointToRay(Mouse.current.position.ReadValue());
+
+            if (Mouse.current.leftButton.wasReleasedThisFrame)
+            {
+                if (selectedUnit != null)
+                {
+                    selectedUnit.Deselect();
+                    selectedUnit = null;
+                }
+                if (
+                    Physics.Raycast(
+                        cameraRay,
+                        out RaycastHit hit,
+                        float.MaxValue,
+                        LayerMask.GetMask("Default")
+                    ) && hit.collider.TryGetComponent(out ISelectable selectable)
+                )
+                {
+                    selectedUnit = selectable;
+                    selectedUnit.Select();
+                }
+            }
         }
 
         private void HandleRotation()
