@@ -16,6 +16,9 @@ namespace GameDevTV.Units
 
         public void Deselect()
         {
+            UnitDeselectedEvent unitDeselectedEvent = new UnitDeselectedEvent(this);
+            Bus<UnitDeselectedEvent>.Raise(unitDeselectedEvent);
+
             if (decal != null)
                 decal.gameObject.SetActive(false);
         }
