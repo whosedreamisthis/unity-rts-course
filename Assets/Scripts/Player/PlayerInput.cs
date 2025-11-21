@@ -1,5 +1,7 @@
 // using GameDevTV.Player;
 using System;
+using GameDevTV.EventBus;
+using GameDevTV.Events;
 using GameDevTV.Units;
 using Unity.Cinemachine;
 using UnityEngine;
@@ -26,6 +28,11 @@ namespace GameDevTV.Player
         private LayerMask selectableUnitsLayers;
 
         [SerializeField]
+        private RectTransform selectionBox;
+
+        private Vector2 startingMousePosition;
+
+        [SerializeField]
         private LayerMask floorLayers;
         private float zoomStartTime;
         private float rotationStartTime;
@@ -44,6 +51,22 @@ namespace GameDevTV.Player
             }
             startingFollowOffset = cinemachineFollow.FollowOffset;
             maxRotationAmount = Mathf.Abs(cinemachineFollow.FollowOffset.z);
+
+            Bus<UnitSelectedEvent>.OnEvent += HandleUnitSelected;
+        }
+
+        private void OnDestroy()
+        {
+            Bus<UnitSelectedEvent>.OnEvent -= HandleUnitSelected;
+        }
+
+        private void HandleUnitSelected(UnitSelectedEvent evt)
+        {
+            if (selectedUnit != null)
+            {
+                selectedUnit.Deselect();
+            }
+            selectedUnit = evt.Unit;
         }
 
         // Update is called once per frame
@@ -54,6 +77,43 @@ namespace GameDevTV.Player
             HandleRotation();
             HandleLeftClick();
             HandleRightClick();
+            HandleDragSelect();
+        }
+
+        private void ResizeSelectionBox()
+        {
+            Vector2 mousePosition = Mouse.current.position.ReadValue();
+
+            float width = mousePosition.x - startingMousePosition.x;
+            float height = mousePosition.y - startingMousePosition.y;
+            Debug.Log($"width  {width} height {height}");
+            Debug.Log($"startingMousePosition {startingMousePosition}");
+            selectionBox.anchoredPosition =
+                startingMousePosition + new Vector2(width / 2, height / 2);
+            selectionBox.sizeDelta = new Vector2(Mathf.Abs(width), Mathf.Abs(height));
+        }
+
+        private void HandleDragSelect()
+        {
+            if (selectionBox == null)
+                return;
+            if (Mouse.current.leftButton.wasPressedThisFrame)
+            {
+                selectionBox.gameObject.SetActive(true);
+                startingMousePosition = Mouse.current.position.ReadValue();
+                selectionBox.anchoredPosition = startingMousePosition;
+            }
+            else if (
+                Mouse.current.leftButton.isPressed && !Mouse.current.leftButton.wasPressedThisFrame
+            )
+            {
+                ResizeSelectionBox();
+            }
+            else if (Mouse.current.leftButton.wasReleasedThisFrame)
+            {
+                selectionBox.gameObject.SetActive(false);
+                selectionBox.sizeDelta = Vector2.zero;
+            }
         }
 
         private void HandleRightClick()
@@ -93,8 +153,8 @@ namespace GameDevTV.Player
                     ) && hit.collider.TryGetComponent(out ISelectable selectable)
                 )
                 {
-                    selectedUnit = selectable;
-                    selectedUnit.Select();
+                    // selectedUnit = selectable;
+                    selectable.Select();
                 }
             }
         }

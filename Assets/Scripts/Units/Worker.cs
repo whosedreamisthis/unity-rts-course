@@ -1,3 +1,5 @@
+using GameDevTV.EventBus;
+using GameDevTV.Events;
 using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.Rendering.Universal;
@@ -18,15 +20,17 @@ namespace GameDevTV.Units
                 decal.gameObject.SetActive(false);
         }
 
+        public void Select()
+        {
+            UnitSelectedEvent unitSelectedEvent = new UnitSelectedEvent(this);
+            Bus<UnitSelectedEvent>.Raise(unitSelectedEvent);
+            if (decal != null)
+                decal.gameObject.SetActive(true);
+        }
+
         public void MoveTo(Vector3 position)
         {
             agent.SetDestination(position);
-        }
-
-        public void Select()
-        {
-            if (decal != null)
-                decal.gameObject.SetActive(true);
         }
 
         private void Awake()
