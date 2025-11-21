@@ -1,5 +1,8 @@
+using System.Windows.Input;
+using GameDevTV.Commands;
 using GameDevTV.EventBus;
 using GameDevTV.Events;
+using Unity.AppUI.UI;
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
 
@@ -12,6 +15,9 @@ namespace GameDevTV.Units
 
         [field: SerializeField]
         public int MaxHealth { get; private set; }
+
+        [field: SerializeField]
+        public ActionBase[] AvailableCommands { get; private set; }
 
         [SerializeField]
         private DecalProjector decalProjector;
