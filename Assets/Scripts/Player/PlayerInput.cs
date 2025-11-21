@@ -1,8 +1,10 @@
 // using GameDevTV.Player;
 using System;
+using System.Collections.Generic;
 using GameDevTV.EventBus;
 using GameDevTV.Events;
 using GameDevTV.Units;
+using Unity.Android.Gradle.Manifest;
 using Unity.Cinemachine;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -37,7 +39,9 @@ namespace GameDevTV.Player
         private float zoomStartTime;
         private float rotationStartTime;
         private float maxRotationAmount;
-        private ISelectable selectedUnit;
+        private HashSet<AbstractUnit> aliveUnits = new(100);
+        private List<ISelectable> selectedUnits = new(12);
+        private HashSet<AbstractUnit> addedUnits = new(24);
 
         private Vector3 startingFollowOffset;
 
@@ -54,23 +58,22 @@ namespace GameDevTV.Player
 
             Bus<UnitSelectedEvent>.OnEvent += HandleUnitSelected;
             Bus<UnitDeselectedEvent>.OnEvent += HandleUnitDeselected;
+            Bus<UnitSpawnEvent>.OnEvent += HandleUnitSpawned;
         }
 
         private void OnDestroy()
         {
             Bus<UnitSelectedEvent>.OnEvent -= HandleUnitSelected;
             Bus<UnitDeselectedEvent>.OnEvent -= HandleUnitDeselected;
+            Bus<UnitSpawnEvent>.OnEvent -= HandleUnitSpawned;
         }
 
-        private void HandleUnitSelected(UnitSelectedEvent evt)
-        {
-            selectedUnit = evt.Unit;
-        }
+        private void HandleUnitSpawned(UnitSpawnEvent evt) => aliveUnits.Add(evt.Unit);
 
-        private void HandleUnitDeselected(UnitDeselectedEvent evt)
-        {
-            selectedUnit = null;
-        }
+        private void HandleUnitSelected(UnitSelectedEvent evt) => selectedUnits.Add(evt.Unit);
+
+        private void HandleUnitDeselected(UnitDeselectedEvent evt) =>
+            selectedUnits.Remove(evt.Unit);
 
         // Update is called once per frame
         private void Update()
@@ -83,7 +86,7 @@ namespace GameDevTV.Player
             HandleDragSelect();
         }
 
-        private void ResizeSelectionBox()
+        private Bounds ResizeSelectionBox()
         {
             Vector2 mousePosition = Mouse.current.position.ReadValue();
 
@@ -94,6 +97,7 @@ namespace GameDevTV.Player
             selectionBox.anchoredPosition =
                 startingMousePosition + new Vector2(width / 2, height / 2);
             selectionBox.sizeDelta = new Vector2(Mathf.Abs(width), Mathf.Abs(height));
+            return new Bounds(selectionBox.anchoredPosition, selectionBox.sizeDelta);
         }
 
         private void HandleDragSelect()
@@ -105,60 +109,90 @@ namespace GameDevTV.Player
                 selectionBox.gameObject.SetActive(true);
                 startingMousePosition = Mouse.current.position.ReadValue();
                 selectionBox.anchoredPosition = startingMousePosition;
+                addedUnits.Clear();
             }
             else if (
                 Mouse.current.leftButton.isPressed && !Mouse.current.leftButton.wasPressedThisFrame
             )
             {
-                ResizeSelectionBox();
+                Bounds selectionBoxBounds = ResizeSelectionBox();
+                foreach (AbstractUnit unit in aliveUnits)
+                {
+                    Vector2 unitPosition = camera.WorldToScreenPoint(unit.transform.position);
+                    if (selectionBoxBounds.Contains(unitPosition))
+                    {
+                        Debug.Log("add unit");
+                        addedUnits.Add(unit);
+                    }
+                }
             }
             else if (Mouse.current.leftButton.wasReleasedThisFrame)
             {
+                DeselectAllUnits();
+                foreach (AbstractUnit unit in addedUnits)
+                {
+                    unit.Select();
+                }
                 selectionBox.gameObject.SetActive(false);
                 selectionBox.sizeDelta = Vector2.zero;
             }
         }
 
+        private void DeselectAllUnits()
+        {
+            ISelectable[] currentlySelectedUnits = selectedUnits.ToArray();
+            foreach (ISelectable selectable in currentlySelectedUnits)
+            {
+                selectable.Deselect();
+            }
+        }
+
         private void HandleRightClick()
         {
-            if (selectedUnit == null || selectedUnit is not IMovable movable)
+            if (selectedUnits.Count == 0)
                 return;
             Ray cameraRay = camera.ScreenPointToRay(Mouse.current.position.ReadValue());
             if (Mouse.current.rightButton.wasReleasedThisFrame)
             {
                 if (Physics.Raycast(cameraRay, out RaycastHit hit, float.MaxValue, floorLayers))
                 {
-                    movable.MoveTo(hit.point);
+                    foreach (ISelectable selectable in selectedUnits)
+                    {
+                        if (selectable is IMovable movable)
+                        {
+                            movable.MoveTo(hit.point);
+                        }
+                    }
                 }
             }
         }
 
         private void HandleLeftClick()
         {
-            if (camera == null)
-                return;
+            // if (camera == null)
+            //     return;
 
-            Ray cameraRay = camera.ScreenPointToRay(Mouse.current.position.ReadValue());
+            // Ray cameraRay = camera.ScreenPointToRay(Mouse.current.position.ReadValue());
 
-            if (Mouse.current.leftButton.wasReleasedThisFrame)
-            {
-                if (selectedUnit != null)
-                {
-                    selectedUnit.Deselect();
-                }
-                if (
-                    Physics.Raycast(
-                        cameraRay,
-                        out RaycastHit hit,
-                        float.MaxValue,
-                        selectableUnitsLayers
-                    ) && hit.collider.TryGetComponent(out ISelectable selectable)
-                )
-                {
-                    // selectedUnit = selectable;
-                    selectable.Select();
-                }
-            }
+            // if (Mouse.current.leftButton.wasReleasedThisFrame)
+            // {
+            //     if (selectedUnit != null)
+            //     {
+            //         selectedUnit.Deselect();
+            //     }
+            //     if (
+            //         Physics.Raycast(
+            //             cameraRay,
+            //             out RaycastHit hit,
+            //             float.MaxValue,
+            //             selectableUnitsLayers
+            //         ) && hit.collider.TryGetComponent(out ISelectable selectable)
+            //     )
+            //     {
+            //         // selectedUnit = selectable;
+            //         selectable.Select();
+            //     }
+            // }
         }
 
         private void HandleRotation()
@@ -251,8 +285,8 @@ namespace GameDevTV.Player
                 return moveAmount;
 
             Vector2 mousePosition = Mouse.current.position.ReadValue();
-            int screenWidth = Screen.width;
-            int screenHeight = Screen.height;
+            int screenWidth = UnityEngine.Screen.width;
+            int screenHeight = UnityEngine.Screen.height;
 
             if (mousePosition.x <= cameraConfig.EdgePanSize)
             {
