@@ -9,10 +9,10 @@ namespace GameDevTV.Units
     [RequireComponent(typeof(NavMeshAgent))]
     public abstract class AbstractUnit : MonoBehaviour, ISelectable, IMovable
     {
-        private NavMeshAgent agent;
-
         [SerializeField]
         private DecalProjector decal;
+        public float AgentRadius => agent.radius;
+        private NavMeshAgent agent;
 
         private void Start()
         {
