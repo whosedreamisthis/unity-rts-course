@@ -23,8 +23,9 @@ namespace GameDevTV.Units
             // decal = GetComponentInChildren<DecalProjector>().gameObject;
         }
 
-        private void Start()
+        protected override void Start()
         {
+            base.Start();
             UnitSpawnEvent spawnEvent = new UnitSpawnEvent(this);
             Bus<UnitSpawnEvent>.Raise(spawnEvent);
         }

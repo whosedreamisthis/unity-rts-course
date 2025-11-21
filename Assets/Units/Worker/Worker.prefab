@@ -131,8 +131,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 37716f7e170c4ca44b6f7da7e70280e5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GameDevTV.Units.Worker
+  <CurrentHealth>k__BackingField: 0
+  <MaxHealth>k__BackingField: 0
   decalProjector: {fileID: 823224888833200081}
-  <Health>k__BackingField: 0
+  UnitSO: {fileID: 11400000, guid: 07cecb59c3529c64dbdb359c934db5bd, type: 2}
 --- !u!136 &4881194114858963671
 CapsuleCollider:
   m_ObjectHideFlags: 0
