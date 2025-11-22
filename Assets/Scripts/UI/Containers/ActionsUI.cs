@@ -4,61 +4,19 @@ using System.Linq;
 using GameDevTV.Commands;
 using GameDevTV.EventBus;
 using GameDevTV.Events;
+using GameDevTV.UI.Components;
 using GameDevTV.Units;
-using Unity.AppUI.UI;
 using UnityEngine;
 using UnityEngine.Events;
 
-namespace GameDevTV.UI
+namespace GameDevTV.UI.Containers
 {
-    public class ActionsUI : MonoBehaviour
+    public class ActionsUI : MonoBehaviour, IUIElement<HashSet<AbstractCommandable>>
     {
         [SerializeField]
         private UIActionButton[] actionButtons;
-        private HashSet<AbstractCommandable> selectedUnits = new(12);
 
-        private void Awake()
-        {
-            Bus<UnitSelectedEvent>.OnEvent += HandleUnitSelected;
-            Bus<UnitDeselectedEvent>.OnEvent += HandleUnitDeselected;
-            Debug.Log("selected");
-        }
-
-        private void Start()
-        {
-            foreach (UIActionButton button in actionButtons)
-            {
-                button.Disable();
-            }
-        }
-
-        private void OnDestroy()
-        {
-            // Debug.Log("destroy selected");
-            Bus<UnitSelectedEvent>.OnEvent -= HandleUnitSelected;
-            Bus<UnitDeselectedEvent>.OnEvent -= HandleUnitDeselected;
-        }
-
-        private void HandleUnitDeselected(UnitDeselectedEvent args)
-        {
-            if (args.Unit is AbstractCommandable commandable)
-            {
-                selectedUnits.Remove(commandable);
-                RefreshButtons();
-            }
-        }
-
-        private void HandleUnitSelected(UnitSelectedEvent args)
-        {
-            if (args.Unit is AbstractCommandable commandable)
-            {
-                selectedUnits.Add(commandable);
-
-                RefreshButtons();
-            }
-        }
-
-        private void RefreshButtons()
+        private void RefreshButtons(HashSet<AbstractCommandable> selectedUnits)
         {
             // Debug.Log("regresh");
             HashSet<ActionBase> availableCommands = new(9);
@@ -93,6 +51,19 @@ namespace GameDevTV.UI
         private UnityAction HandleClick(ActionBase action)
         {
             return () => Bus<ActionSelectedEvent>.Raise(new ActionSelectedEvent(action));
+        }
+
+        public void EnableFor(HashSet<AbstractCommandable> selectedUnits)
+        {
+            RefreshButtons(selectedUnits);
+        }
+
+        public void Disable()
+        {
+            foreach (UIActionButton button in actionButtons)
+            {
+                button.Disable();
+            }
         }
     }
 }
