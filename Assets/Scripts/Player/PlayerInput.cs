@@ -79,8 +79,11 @@ namespace GameDevTV.Player
 
         private void HandleActionSelected(ActionSelectedEvent evt)
         {
-            Debug.Log("setting active action ");
             activeAction = evt.Action;
+            if (!activeAction.RequiresClickToActivate)
+            {
+                ActivateAction(new RaycastHit());
+            }
         }
 
         private void HandleUnitSpawned(UnitSpawnEvent evt) => aliveUnits.Add(evt.Unit);
@@ -240,18 +243,23 @@ namespace GameDevTV.Player
                 && Physics.Raycast(cameraRay, out hit, float.MaxValue, floorLayers)
             )
             {
-                List<AbstractUnit> abstractUnits = selectedUnits
-                    .Where((unit) => unit is AbstractUnit)
-                    .Cast<AbstractUnit>()
-                    .ToList();
-                for (int i = 0; i < abstractUnits.Count; i++)
-                {
-                    CommandContext context = new(abstractUnits[i], hit, i);
-                    activeAction.Handle(context);
-                }
-
-                activeAction = null;
+                ActivateAction(hit);
             }
+        }
+
+        private void ActivateAction(RaycastHit hit)
+        {
+            List<AbstractCommandable> abstractCommandables = selectedUnits
+                .Where((unit) => unit is AbstractCommandable)
+                .Cast<AbstractCommandable>()
+                .ToList();
+            for (int i = 0; i < abstractCommandables.Count; i++)
+            {
+                CommandContext context = new(abstractCommandables[i], hit, i);
+                activeAction.Handle(context);
+            }
+
+            activeAction = null;
         }
 
         private void HandleRotation()

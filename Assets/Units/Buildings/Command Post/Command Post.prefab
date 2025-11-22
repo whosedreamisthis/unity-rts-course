@@ -66,11 +66,13 @@ MonoBehaviour:
   m_GameObject: {fileID: 1589499662120937400}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3e03cf533f637e044b6758d3723551f2, type: 3}
+  m_Script: {fileID: 11500000, guid: af07ffdf9ce36c64e8f3c6f64ee30c6d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GameDevTV.Units.Building
   <CurrentHealth>k__BackingField: 0
   <MaxHealth>k__BackingField: 0
+  <AvailableCommands>k__BackingField:
+  - {fileID: 11400000, guid: ab343657c26620a41a3b8f3da63f9dcd, type: 2}
   decalProjector: {fileID: 2861578615539528917}
   UnitSO: {fileID: 11400000, guid: 8bc68de07e31be34ebabf8b20f9ca5b5, type: 2}
 --- !u!208 &2898880781111519969
