@@ -7,6 +7,7 @@ using GameDevTV.Events;
 using GameDevTV.Units;
 using Unity.AppUI.UI;
 using UnityEngine;
+using UnityEngine.Events;
 
 namespace GameDevTV.UI
 {
@@ -21,9 +22,13 @@ namespace GameDevTV.UI
             Bus<UnitSelectedEvent>.OnEvent += HandleUnitSelected;
             Bus<UnitDeselectedEvent>.OnEvent += HandleUnitDeselected;
             Debug.Log("selected");
+        }
+
+        private void Start()
+        {
             foreach (UIActionButton button in actionButtons)
             {
-                button.SetIcon(null);
+                button.Disable();
             }
         }
 
@@ -75,14 +80,19 @@ namespace GameDevTV.UI
                 {
                     // Debug.Log("actionForSlot != null");
 
-                    actionButtons[i].SetIcon(actionForSlot.Icon);
+                    actionButtons[i].EnableFor(actionForSlot, HandleClick(actionForSlot));
                 }
                 else
                 {
                     // Debug.Log("actionForSlot == null");
-                    actionButtons[i].SetIcon(null);
+                    actionButtons[i].Disable();
                 }
             }
+        }
+
+        private UnityAction HandleClick(ActionBase action)
+        {
+            return () => Bus<ActionSelectedEvent>.Raise(new ActionSelectedEvent(action));
         }
     }
 }

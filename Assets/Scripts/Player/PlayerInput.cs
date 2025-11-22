@@ -1,11 +1,15 @@
 // using GameDevTV.Player;
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using GameDevTV.Commands;
 using GameDevTV.EventBus;
 using GameDevTV.Events;
 using GameDevTV.Units;
 using Unity.Cinemachine;
+using UnityEditor.MPE;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 
 namespace GameDevTV.Player
@@ -33,6 +37,9 @@ namespace GameDevTV.Player
 
         private Vector2 startingMousePosition;
 
+        private ActionBase activeAction;
+        private bool wasMouseDownOnUI;
+
         [SerializeField]
         private LayerMask floorLayers;
         private float zoomStartTime;
@@ -58,6 +65,8 @@ namespace GameDevTV.Player
             Bus<UnitSelectedEvent>.OnEvent += HandleUnitSelected;
             Bus<UnitDeselectedEvent>.OnEvent += HandleUnitDeselected;
             Bus<UnitSpawnEvent>.OnEvent += HandleUnitSpawned;
+
+            Bus<ActionSelectedEvent>.OnEvent += HandleActionSelected;
         }
 
         private void OnDestroy()
@@ -65,6 +74,13 @@ namespace GameDevTV.Player
             Bus<UnitSelectedEvent>.OnEvent -= HandleUnitSelected;
             Bus<UnitDeselectedEvent>.OnEvent -= HandleUnitDeselected;
             Bus<UnitSpawnEvent>.OnEvent -= HandleUnitSpawned;
+            Bus<ActionSelectedEvent>.OnEvent -= HandleActionSelected;
+        }
+
+        private void HandleActionSelected(ActionSelectedEvent evt)
+        {
+            Debug.Log("setting active action ");
+            activeAction = evt.Action;
         }
 
         private void HandleUnitSpawned(UnitSpawnEvent evt) => aliveUnits.Add(evt.Unit);
@@ -118,7 +134,7 @@ namespace GameDevTV.Player
 
         private void HandleMouseUp()
         {
-            if (!Keyboard.current.shiftKey.isPressed)
+            if (activeAction == null && !Keyboard.current.shiftKey.isPressed)
             {
                 DeselectAllUnits();
             }
@@ -134,6 +150,8 @@ namespace GameDevTV.Player
 
         private void HandleMouseDrag()
         {
+            if (wasMouseDownOnUI || activeAction != null)
+                return;
             Bounds selectionBoxBounds = ResizeSelectionBox();
             foreach (AbstractUnit unit in aliveUnits)
             {
@@ -147,6 +165,9 @@ namespace GameDevTV.Player
 
         private void HandleMouseDown()
         {
+            wasMouseDownOnUI = EventSystem.current.IsPointerOverGameObject();
+            if (activeAction != null)
+                return;
             selectionBox.gameObject.SetActive(true);
             startingMousePosition = Mouse.current.position.ReadValue();
             selectionBox.anchoredPosition = startingMousePosition;
@@ -171,15 +192,10 @@ namespace GameDevTV.Player
             {
                 if (Physics.Raycast(cameraRay, out RaycastHit hit, float.MaxValue, floorLayers))
                 {
-                    List<AbstractUnit> abstractUnits = new(selectedUnits.Count);
-
-                    foreach (ISelectable selectable in selectedUnits)
-                    {
-                        if (selectable is AbstractUnit unit)
-                        {
-                            abstractUnits.Add(unit);
-                        }
-                    }
+                    List<AbstractUnit> abstractUnits = selectedUnits
+                        .Where((unit) => unit is AbstractUnit)
+                        .Cast<AbstractUnit>()
+                        .ToList();
 
                     for (int i = 0; i < abstractUnits.Count; i++)
                     {
@@ -205,16 +221,36 @@ namespace GameDevTV.Player
             Ray cameraRay = camera.ScreenPointToRay(Mouse.current.position.ReadValue());
 
             if (
-                Physics.Raycast(
+                activeAction == null
+                && Physics.Raycast(
                     cameraRay,
                     out RaycastHit hit,
                     float.MaxValue,
                     selectableUnitsLayers
-                ) && hit.collider.TryGetComponent(out ISelectable selectable)
+                )
+                && hit.collider.TryGetComponent(out ISelectable selectable)
             )
             {
                 // selectedUnit = selectable;
                 selectable.Select();
+            }
+            else if (
+                activeAction != null
+                && !EventSystem.current.IsPointerOverGameObject()
+                && Physics.Raycast(cameraRay, out hit, float.MaxValue, floorLayers)
+            )
+            {
+                List<AbstractUnit> abstractUnits = selectedUnits
+                    .Where((unit) => unit is AbstractUnit)
+                    .Cast<AbstractUnit>()
+                    .ToList();
+                for (int i = 0; i < abstractUnits.Count; i++)
+                {
+                    CommandContext context = new(abstractUnits[i], hit, i);
+                    activeAction.Handle(context);
+                }
+
+                activeAction = null;
             }
         }
 
