@@ -1,21 +1,39 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace GameDevTV.Units
 {
     public class BaseBuilding : AbstractCommandable
     {
+        private Queue<UnitSO> buildingQueue = new(MAX_QUEUE_SIZE);
+        private const int MAX_QUEUE_SIZE = 5;
+
         public void BuildUnit(UnitSO unit)
         {
-            StartCoroutine(DoBuildUnitCo(unit));
+            if (buildingQueue.Count == MAX_QUEUE_SIZE)
+            {
+                Debug.LogError(
+                    "BuildUnit clalled when the queue was already full! This is not supported"
+                );
+                return;
+            }
+            buildingQueue.Enqueue(unit);
+            if (buildingQueue.Count == 1)
+            {
+                StartCoroutine(DoBuildUnitsCo());
+            }
         }
 
-        private IEnumerator DoBuildUnitCo(UnitSO unit)
+        private IEnumerator DoBuildUnitsCo()
         {
-            Debug.Log("start building a unit.");
-            yield return new WaitForSeconds(unit.BuildTime);
-            Debug.Log("building unit completed.");
-            Instantiate(unit.Prefab, transform.position, Quaternion.identity);
+            while (buildingQueue.Count > 0)
+            {
+                UnitSO unit = buildingQueue.Peek();
+                yield return new WaitForSeconds(unit.BuildTime);
+                Instantiate(unit.Prefab, transform.position, Quaternion.identity);
+                buildingQueue.Dequeue();
+            }
         }
     }
 }
