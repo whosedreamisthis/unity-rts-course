@@ -18,7 +18,7 @@ namespace GameDevTV.Units
         {
             agent = GetComponent<NavMeshAgent>();
             behaviourAgent = GetComponent<BehaviorGraphAgent>();
-            // behaviourAgent.SetVariableValue("Command", UnitCommands.Stop);
+            behaviourAgent.SetVariableValue("Command", UnitCommands.Stop);
         }
 
         protected override void Start()
@@ -26,18 +26,18 @@ namespace GameDevTV.Units
             base.Start();
             UnitSpawnEvent spawnEvent = new UnitSpawnEvent(this);
             Bus<UnitSpawnEvent>.Raise(spawnEvent);
-            behaviourAgent.SetVariableValue("TargetLocation", transform.position);
         }
 
         public void MoveTo(Vector3 position)
         {
+            Debug.Log("abstaract unit moveto");
             behaviourAgent.SetVariableValue("TargetLocation", position);
-            // behaviourAgent.SetVariableValue("Command", UnitCommands.Move);
+            behaviourAgent.SetVariableValue("Command", UnitCommands.Move);
         }
 
         public void Stop()
         {
-            // behaviourAgent.SetVariableValue("Command", UnitCommands.Stop);
+            behaviourAgent.SetVariableValue("Command", UnitCommands.Stop);
         }
     }
 }
