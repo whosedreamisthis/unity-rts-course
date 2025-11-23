@@ -14,20 +14,11 @@ namespace GameDevTV.Units
         private NavMeshAgent agent;
         private BehaviorGraphAgent behaviourAgent;
 
-        public void MoveTo(Vector3 position)
-        {
-            Debug.Log($"Move to {position}");
-            string targetLocationName = "TargetLocation";
-            behaviourAgent.SetVariableValue(targetLocationName, position);
-        }
-
         private void Awake()
         {
             agent = GetComponent<NavMeshAgent>();
             behaviourAgent = GetComponent<BehaviorGraphAgent>();
-            MoveTo(transform.position);
-
-            // decal = GetComponentInChildren<DecalProjector>().gameObject;
+            // behaviourAgent.SetVariableValue("Command", UnitCommands.Stop);
         }
 
         protected override void Start()
@@ -35,7 +26,18 @@ namespace GameDevTV.Units
             base.Start();
             UnitSpawnEvent spawnEvent = new UnitSpawnEvent(this);
             Bus<UnitSpawnEvent>.Raise(spawnEvent);
-            MoveTo(transform.position);
+            behaviourAgent.SetVariableValue("TargetLocation", transform.position);
+        }
+
+        public void MoveTo(Vector3 position)
+        {
+            behaviourAgent.SetVariableValue("TargetLocation", position);
+            // behaviourAgent.SetVariableValue("Command", UnitCommands.Move);
+        }
+
+        public void Stop()
+        {
+            // behaviourAgent.SetVariableValue("Command", UnitCommands.Stop);
         }
     }
 }
